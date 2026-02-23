@@ -1424,10 +1424,34 @@ rewardsTitle.TextXAlignment = Enum.TextXAlignment.Left
 rewardsTitle.Parent = rewardsPanel
 
 local rewardsRows = Instance.new("Frame")
-rewardsRows.Size = UDim2.new(1, -12, 1, -28)
+rewardsRows.Size = UDim2.new(1, -12, 1, -52)
 rewardsRows.Position = UDim2.new(0, 6, 0, 24)
 rewardsRows.BackgroundTransparency = 1
 rewardsRows.Parent = rewardsPanel
+
+local rewardsStatusLabel = Instance.new("TextLabel")
+rewardsStatusLabel.Size = UDim2.new(1, -110, 0, 20)
+rewardsStatusLabel.Position = UDim2.new(0, 6, 1, -22)
+rewardsStatusLabel.BackgroundTransparency = 1
+rewardsStatusLabel.Text = ""
+rewardsStatusLabel.TextColor3 = Color3.fromRGB(189, 193, 218)
+rewardsStatusLabel.Font = Enum.Font.Gotham
+rewardsStatusLabel.TextSize = 11
+rewardsStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+rewardsStatusLabel.Parent = rewardsPanel
+
+local rewardsClaimButton = createButton("Claim", UDim2.new(0, 96, 0, 20), UDim2.new(1, -102, 1, -24), Color3.fromRGB(86, 170, 120), rewardsPanel)
+rewardsClaimButton.TextSize = 11
+
+--- Returns true when the player can claim a daily reward at the current UTC day.
+local function canClaimDailyReward(lastClaim: number?): boolean
+	if type(lastClaim) ~= "number" or lastClaim <= 0 then
+		return true
+	end
+	local claimDate = os.date("!*t", lastClaim)
+	local nowDate = os.date("!*t", os.time())
+	return claimDate.yday ~= nowDate.yday or claimDate.year ~= nowDate.year
+end
 
 --- Rebuilds rewards rows without duplicating old entries.
 local function updateRewardsUi(snapshot: table)
@@ -1458,6 +1482,21 @@ local function updateRewardsUi(snapshot: table)
 		if claimedCount == 0 and streak > 0 then
 			claimedCount = rewardCount
 		end
+	end
+
+	local canClaimDaily = canClaimDailyReward(snapshot.Daily and snapshot.Daily.LastClaim)
+	if canClaimDaily then
+		rewardsStatusLabel.Text = "You have unclaimed rewards, claim them now!"
+		rewardsStatusLabel.TextColor3 = Color3.fromRGB(255, 214, 91)
+		rewardsClaimButton.BackgroundColor3 = Color3.fromRGB(86, 170, 120)
+		rewardsClaimButton.AutoButtonColor = true
+		rewardsClaimButton.Active = true
+	else
+		rewardsStatusLabel.Text = "Daily reward already claimed. Come back tomorrow."
+		rewardsStatusLabel.TextColor3 = Color3.fromRGB(189, 193, 218)
+		rewardsClaimButton.BackgroundColor3 = Color3.fromRGB(68, 72, 92)
+		rewardsClaimButton.AutoButtonColor = false
+		rewardsClaimButton.Active = false
 	end
 
 	for index, reward in ipairs(rewards) do
@@ -1525,6 +1564,11 @@ sellButton.Activated:Connect(function()
 end)
 
 dailyButton.Activated:Connect(function()
+	remotes.RequestClaimDaily:FireServer()
+	refresh()
+end)
+
+rewardsClaimButton.Activated:Connect(function()
 	remotes.RequestClaimDaily:FireServer()
 	refresh()
 end)
