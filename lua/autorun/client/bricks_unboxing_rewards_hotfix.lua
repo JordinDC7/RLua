@@ -3,6 +3,10 @@
 
 local HOTFIX_TAG = "[RLua][BricksUnboxingHotfix]"
 local TARGET_SOURCE = "bricks_server_unboxingmenu_rewards.lua"
+local TARGET_PANEL_NAMES = {
+	"bricks_server_unboxingmenu_rewards",
+	"bricks_server_unboxingmenu_rewards_vgui"
+}
 
 --- Detects whether an error matches the known nil button failures in the rewards panel.
 --- @param errorMessage string
@@ -36,40 +40,58 @@ end
 
 --- Tries to patch the Bricks rewards panel Refresh method once available.
 --- @return boolean
+local function patchControlTable(panelName)
+	local controlTable = vgui.GetControlTable(panelName)
+	if not (controlTable and isfunction(controlTable.Refresh)) or controlTable.__rluaRewardsPatched then
+		return false
+	end
+
+	local info = debug.getinfo(controlTable.Refresh, "S") or {}
+	local source = tostring(info.short_src or info.source or "")
+	if not string.find(source, TARGET_SOURCE, 1, true) then
+		return false
+	end
+
+	local original = controlTable.Refresh
+	controlTable.Refresh = function(self, ...)
+		local ok, result = xpcall(function()
+			return original(self, ...)
+		end, debug.traceback)
+
+		if ok then
+			return result
+		end
+
+		if isNilButtonError(result) then
+			log("warn", "Suppressed nil button error in rewards panel Refresh", {
+				panel = panelName,
+				error = result
+			})
+			return
+		end
+
+		error(result)
+	end
+
+	controlTable.__rluaRewardsPatched = true
+	log("info", "Patched rewards panel Refresh", { panel = panelName, source = source })
+	return true
+end
+
 local function applyPatch()
 	if not vgui or not vgui.GetControlTable or not debug or not debug.getinfo then
 		return false
 	end
 
-	for _, panelName in ipairs(vgui.GetControlTableNames() or {}) do
-		local controlTable = vgui.GetControlTable(panelName)
-		if controlTable and isfunction(controlTable.Refresh) and not controlTable.__rluaRewardsPatched then
-			local info = debug.getinfo(controlTable.Refresh, "S") or {}
-			local source = tostring(info.short_src or info.source or "")
-			if string.find(source, TARGET_SOURCE, 1, true) then
-				local original = controlTable.Refresh
-				controlTable.Refresh = function(self, ...)
-					local ok, result = xpcall(function()
-						return original(self, ...)
-					end, debug.traceback)
+	for _, panelName in ipairs(TARGET_PANEL_NAMES) do
+		if patchControlTable(panelName) then
+			return true
+		end
+	end
 
-					if ok then
-						return result
-					end
-
-					if isNilButtonError(result) then
-						log("warn", "Suppressed nil button error in rewards panel Refresh", {
-							panel = panelName,
-							error = result
-						})
-						return
-					end
-
-					error(result)
-				end
-
-				controlTable.__rluaRewardsPatched = true
-				log("info", "Patched rewards panel Refresh", { panel = panelName, source = source })
+	if vgui.GetControlTableNames then
+		for _, panelName in ipairs(vgui.GetControlTableNames() or {}) do
+			if patchControlTable(panelName) then
 				return true
 			end
 		end
@@ -79,9 +101,10 @@ local function applyPatch()
 end
 
 if not applyPatch() then
-	hook.Add("InitPostEntity", "RLua.BricksUnboxingRewardsPatch", function()
+	local hookName = "RLua.BricksUnboxingRewardsPatch"
+	hook.Add("Think", hookName, function()
 		if applyPatch() then
-			hook.Remove("InitPostEntity", "RLua.BricksUnboxingRewardsPatch")
+			hook.Remove("Think", hookName)
 		end
 	end)
 end
