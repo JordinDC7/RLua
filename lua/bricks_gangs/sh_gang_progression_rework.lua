@@ -16,6 +16,7 @@ GangProgression.Config = {
 	SoftCapMultiplier = 1.28,
 	HardCapLevel = 60,
 	HardCapMultiplier = 1.52,
+	PremiumCreditsStoreURL = "https://nexus.example.com/store/credits",
 	UpgradePointInterval = 2,
 	DoctrineUnlockLevel = 20
 }
@@ -292,6 +293,38 @@ end
 --- @return boolean
 function GangProgression.CanSelectDoctrine(level)
 	return level >= GangProgression.Config.DoctrineUnlockLevel
+end
+
+--- Provides the next UI action for custom jobs that use premium credits.
+--- @param premiumCredits number
+--- @param customJobCost number
+--- @return table
+function GangProgression.GetCustomJobPremiumCreditAction(premiumCredits, customJobCost)
+	if type(premiumCredits) ~= "number" or type(customJobCost) ~= "number" then
+		GangProgression.Log("error", "Invalid premium credit action input", {
+			premiumCreditsType = type(premiumCredits),
+			customJobCostType = type(customJobCost)
+		})
+		return {
+			affordable = false,
+			errorCode = "invalid_input",
+			ctaURL = GangProgression.Config.PremiumCreditsStoreURL
+		}
+	end
+
+	if premiumCredits < customJobCost then
+		return {
+			affordable = false,
+			errorCode = "insufficient_premium_credits",
+			ctaURL = GangProgression.Config.PremiumCreditsStoreURL
+		}
+	end
+
+	return {
+		affordable = true,
+		errorCode = "ok",
+		ctaURL = nil
+	}
 end
 
 return GangProgression
