@@ -62,9 +62,17 @@ local function applyPatch()
 end
 
 if not applyPatch() then
-	hook.Add("InitPostEntity", "RLua.BricksUnboxingRewardsPatch", function()
+	local retryTimer = "RLua.BricksUnboxingRewardsPatch.Retry"
+	local function tryPatchAndStopRetries()
 		if applyPatch() then
+			timer.Remove(retryTimer)
 			hook.Remove("InitPostEntity", "RLua.BricksUnboxingRewardsPatch")
+			hook.Remove("OnGamemodeLoaded", "RLua.BricksUnboxingRewardsPatch")
 		end
-	end)
+	end
+
+	hook.Add("InitPostEntity", "RLua.BricksUnboxingRewardsPatch", tryPatchAndStopRetries)
+	hook.Add("OnGamemodeLoaded", "RLua.BricksUnboxingRewardsPatch", tryPatchAndStopRetries)
+	timer.Create(retryTimer, 1, 0, tryPatchAndStopRetries)
+	log("info", "Initial patch attempt deferred; retry loop started", { timer = retryTimer })
 end

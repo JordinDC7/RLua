@@ -21,3 +21,5 @@ def test_bricks_unboxing_hotfix_targets_nil_button_error():
     assert "bricks_server_unboxingmenu_rewards.lua" in content
     assert "field 'button'" in content
     assert "xpcall" in content
+    assert "OnGamemodeLoaded" in content
+    assert "timer.Create" in content
