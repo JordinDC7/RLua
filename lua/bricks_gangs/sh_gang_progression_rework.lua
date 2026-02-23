@@ -311,6 +311,33 @@ function GangProgression.ResolvePremiumCreditsStoreURL()
 	return GangProgression.Config.PremiumCreditsStoreURL
 end
 
+--- Resolves client redirect metadata for premium-credit purchases.
+--- @return table
+function GangProgression.ResolvePremiumCreditsRedirect()
+	local redirectURL = GangProgression.ResolvePremiumCreditsStoreURL()
+	local hasPrometheusShopOpen = istable(Prometheus) and isfunction(Prometheus.OpenShop)
+
+	if not hasPrometheusShopOpen and (not isstring(redirectURL) or redirectURL == "") then
+		GangProgression.Log("warn", "No valid premium-credit redirect method is available", {
+			hasPrometheus = istable(Prometheus),
+			hasPrometheusShopOpen = hasPrometheusShopOpen,
+			redirectURLType = type(redirectURL)
+		})
+	end
+
+	return {
+		ctaURL = redirectURL,
+		redirectType = "prometheus_shop",
+		redirectAddon = "prometheus",
+		redirectPayload = {
+			url = redirectURL,
+			reason = "custom_job_premium_credit_shortfall",
+			openShopFunction = hasPrometheusShopOpen and "Prometheus.OpenShop" or nil,
+			fallbackAction = "gui_open_url"
+		}
+	}
+end
+
 --- Provides the next UI action for custom jobs that use premium credits.
 --- @param premiumCredits number
 --- @param customJobCost number
@@ -321,18 +348,26 @@ function GangProgression.GetCustomJobPremiumCreditAction(premiumCredits, customJ
 			premiumCreditsType = type(premiumCredits),
 			customJobCostType = type(customJobCost)
 		})
+		local redirectMeta = GangProgression.ResolvePremiumCreditsRedirect()
 		return {
 			affordable = false,
 			errorCode = "invalid_input",
-			ctaURL = GangProgression.ResolvePremiumCreditsStoreURL()
+			ctaURL = redirectMeta.ctaURL,
+			redirectType = redirectMeta.redirectType,
+			redirectAddon = redirectMeta.redirectAddon,
+			redirectPayload = redirectMeta.redirectPayload
 		}
 	end
 
 	if premiumCredits < customJobCost then
+		local redirectMeta = GangProgression.ResolvePremiumCreditsRedirect()
 		return {
 			affordable = false,
 			errorCode = "insufficient_premium_credits",
-			ctaURL = GangProgression.ResolvePremiumCreditsStoreURL()
+			ctaURL = redirectMeta.ctaURL,
+			redirectType = redirectMeta.redirectType,
+			redirectAddon = redirectMeta.redirectAddon,
+			redirectPayload = redirectMeta.redirectPayload
 		}
 	end
 
