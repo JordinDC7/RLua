@@ -4,6 +4,23 @@
 local HOTFIX_TAG = "[RLua][BricksUnboxingHotfix]"
 local TARGET_SOURCE = "bricks_server_unboxingmenu_rewards.lua"
 
+--- Detects whether an error matches the known nil button failures in the rewards panel.
+--- @param errorMessage string
+--- @return boolean
+local function isNilButtonError(errorMessage)
+	errorMessage = string.lower(tostring(errorMessage or ""))
+
+	if string.find(errorMessage, "field 'button'", 1, true) then
+		return true
+	end
+
+	if not string.find(errorMessage, "button", 1, true) then
+		return false
+	end
+
+	return string.find(errorMessage, "nil value", 1, true) ~= nil
+end
+
 --- Emits a structured log entry for the hotfix.
 --- @param level string
 --- @param message string
@@ -40,7 +57,7 @@ local function applyPatch()
 						return result
 					end
 
-					if string.find(result, "field 'button'", 1, true) then
+					if isNilButtonError(result) then
 						log("warn", "Suppressed nil button error in rewards panel Refresh", {
 							panel = panelName,
 							error = result
