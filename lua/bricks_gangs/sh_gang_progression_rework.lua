@@ -16,7 +16,7 @@ GangProgression.Config = {
 	SoftCapMultiplier = 1.28,
 	HardCapLevel = 60,
 	HardCapMultiplier = 1.52,
-	PremiumCreditsStoreURL = "https://nexus.example.com/store/credits",
+	PremiumCreditsStoreURL = "https://smgrpdonate.shop/",
 	UpgradePointInterval = 2,
 	DoctrineUnlockLevel = 20
 }
@@ -295,6 +295,22 @@ function GangProgression.CanSelectDoctrine(level)
 	return level >= GangProgression.Config.DoctrineUnlockLevel
 end
 
+--- Resolves premium credit store URL from Prometheus integration when available.
+--- @return string
+function GangProgression.ResolvePremiumCreditsStoreURL()
+	if istable(Prometheus) and isfunction(Prometheus.GetCreditsStoreURL) then
+		local storeURL = Prometheus.GetCreditsStoreURL()
+		if isstring(storeURL) and storeURL ~= "" then
+			return storeURL
+		end
+		GangProgression.Log("warn", "Prometheus returned invalid credits store URL", {
+			storeURLType = type(storeURL)
+		})
+	end
+
+	return GangProgression.Config.PremiumCreditsStoreURL
+end
+
 --- Provides the next UI action for custom jobs that use premium credits.
 --- @param premiumCredits number
 --- @param customJobCost number
@@ -308,7 +324,7 @@ function GangProgression.GetCustomJobPremiumCreditAction(premiumCredits, customJ
 		return {
 			affordable = false,
 			errorCode = "invalid_input",
-			ctaURL = GangProgression.Config.PremiumCreditsStoreURL
+			ctaURL = GangProgression.ResolvePremiumCreditsStoreURL()
 		}
 	end
 
@@ -316,7 +332,7 @@ function GangProgression.GetCustomJobPremiumCreditAction(premiumCredits, customJ
 		return {
 			affordable = false,
 			errorCode = "insufficient_premium_credits",
-			ctaURL = GangProgression.Config.PremiumCreditsStoreURL
+			ctaURL = GangProgression.ResolvePremiumCreditsStoreURL()
 		}
 	end
 
