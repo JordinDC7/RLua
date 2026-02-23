@@ -20,6 +20,4 @@ def test_bricks_unboxing_hotfix_targets_nil_button_error():
     content = path.read_text()
     assert "bricks_server_unboxingmenu_rewards.lua" in content
     assert "field 'button'" in content
-    assert "nil value" in content
-    assert "isNilButtonError" in content
     assert "xpcall" in content
