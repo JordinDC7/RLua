@@ -46,7 +46,9 @@ RLuaWeaponStats.RARITY_RULES = {
 	uncommon = { minLines = 2, maxLines = 3, strengthMin = 0.5, strengthMax = 0.7 },
 	rare = { minLines = 2, maxLines = 4, strengthMin = 0.65, strengthMax = 0.85 },
 	epic = { minLines = 3, maxLines = 5, strengthMin = 0.8, strengthMax = 1.0 },
-	legendary = { minLines = 4, maxLines = 6, strengthMin = 0.95, strengthMax = 1.2 }
+	legendary = { minLines = 4, maxLines = 6, strengthMin = 0.95, strengthMax = 1.2 },
+	glitched = { minLines = 5, maxLines = 6, strengthMin = 1.1, strengthMax = 1.35 },
+	mythical = { minLines = 5, maxLines = 6, strengthMin = 1.25, strengthMax = 1.5 }
 }
 
 -- Stat pool with per-line ranges at full quality (quality scales these values).
