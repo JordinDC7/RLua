@@ -20,6 +20,16 @@ local function getClaimedCount(streak: number, rewardCount: number): number
 	return claimedCount
 end
 
+--- Mirrors the reward UI day-boundary claim availability check.
+local function canClaimDailyReward(lastClaim: number, nowUtc: number): boolean
+	if lastClaim <= 0 then
+		return true
+	end
+	local claimDate = os.date("!*t", lastClaim)
+	local nowDate = os.date("!*t", nowUtc)
+	return claimDate.yday ~= nowDate.yday or claimDate.year ~= nowDate.year
+end
+
 --- Validates streak calculations across normal and wrap-around states.
 local function testGetClaimedCount()
 	expect(getClaimedCount(0, 7) == 0, "Expected no claimed rewards at streak 0.")
@@ -30,4 +40,13 @@ local function testGetClaimedCount()
 	expect(getClaimedCount(3, 0) == 0, "Expected no claimed rewards for empty reward table.")
 end
 
+--- Validates claim availability changes only once per UTC day.
+local function testCanClaimDailyReward()
+	expect(canClaimDailyReward(0, 1000), "Expected missing claim timestamp to be claimable.")
+	expect(not canClaimDailyReward(1704067200, 1704067200 + 3600), "Expected same UTC day to be unclaimable.")
+	expect(canClaimDailyReward(1704067200, 1704153600), "Expected next UTC day to be claimable.")
+	expect(canClaimDailyReward(1735686000, 1735689600), "Expected new UTC year/day to be claimable.")
+end
+
 testGetClaimedCount()
+testCanClaimDailyReward()
