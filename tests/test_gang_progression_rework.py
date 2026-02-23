@@ -45,3 +45,12 @@ def test_upgrade_catalog_has_variety_and_depth():
 def test_doctrine_system_provides_unique_paths():
     doctrine_ids = re.findall(r'\n\t([a-z_]+)\s*=\s*{\n\t\tname\s*=\s*"[^\"]+",\n\t\tdescription', SOURCE)
     assert {"ledger", "ironwall", "nightfall"}.issubset(set(doctrine_ids))
+
+
+def test_custom_job_premium_credit_action_provides_store_cta_on_shortfall():
+    assert 'PremiumCreditsStoreURL = "https://smgrpdonate.shop/"' in SOURCE
+    assert 'function GangProgression.ResolvePremiumCreditsStoreURL()' in SOURCE
+    assert 'Prometheus.GetCreditsStoreURL' in SOURCE
+    assert 'function GangProgression.GetCustomJobPremiumCreditAction(premiumCredits, customJobCost)' in SOURCE
+    assert 'errorCode = "insufficient_premium_credits"' in SOURCE
+    assert 'ctaURL = GangProgression.ResolvePremiumCreditsStoreURL()' in SOURCE
