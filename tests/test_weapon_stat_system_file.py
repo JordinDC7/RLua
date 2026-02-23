@@ -6,7 +6,7 @@ def test_weapon_stat_system_contains_rarity_and_stat_rules():
     assert path.exists()
     content = path.read_text()
 
-    for rarity in ["common", "uncommon", "rare", "epic", "legendary"]:
+    for rarity in ["common", "uncommon", "rare", "epic", "legendary", "glitched", "mythical"]:
         assert rarity in content
 
     for stat_key in [
