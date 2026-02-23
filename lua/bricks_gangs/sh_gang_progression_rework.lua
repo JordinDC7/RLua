@@ -316,7 +316,8 @@ end
 function GangProgression.ResolvePremiumCreditsRedirect()
 	local storeURL = GangProgression.ResolvePremiumCreditsStoreURL()
 	local redirectPayload = {
-		fallbackAction = "gui_open_url"
+		fallbackAction = "gui_open_url",
+		fallbackDescription = "Open external premium credits store"
 	}
 
 	if isstring(storeURL) and storeURL ~= "" then
@@ -338,10 +339,37 @@ function GangProgression.ResolvePremiumCreditsRedirect()
 
 	return {
 		ctaURL = storeURL,
+		ctaLabel = "Open Credits Shop",
+		ctaDescription = "Buy premium credits from the store",
 		redirectType = "prometheus_shop",
 		redirectAddon = "prometheus",
 		redirectPayload = redirectPayload
 	}
+end
+
+--- Opens the premium credits shop through Prometheus or URL fallback.
+--- @return boolean, string
+function GangProgression.OpenPremiumCreditsShop()
+	local redirectMetadata = GangProgression.ResolvePremiumCreditsRedirect()
+	local redirectPayload = redirectMetadata.redirectPayload or {}
+
+	if redirectPayload.openShopFunction == "Prometheus.OpenShop" and istable(Prometheus) and isfunction(Prometheus.OpenShop) then
+		Prometheus.OpenShop()
+		return true, "prometheus"
+	end
+
+	if isstring(redirectPayload.fallbackURL) and redirectPayload.fallbackURL ~= "" and gui and isfunction(gui.OpenURL) then
+		gui.OpenURL(redirectPayload.fallbackURL)
+		return true, "url"
+	end
+
+	GangProgression.Log("warn", "Failed to open premium credits shop", {
+		hasPrometheus = istable(Prometheus),
+		hasOpenShop = istable(Prometheus) and isfunction(Prometheus.OpenShop) or false,
+		hasFallbackURL = isstring(redirectPayload.fallbackURL) and redirectPayload.fallbackURL ~= ""
+	})
+
+	return false, "unavailable"
 end
 
 --- Provides the next UI action for custom jobs that use premium credits.
@@ -359,6 +387,8 @@ function GangProgression.GetCustomJobPremiumCreditAction(premiumCredits, customJ
 		return {
 			affordable = false,
 			errorCode = "invalid_input",
+			ctaLabel = redirectMetadata.ctaLabel,
+			ctaDescription = redirectMetadata.ctaDescription,
 			ctaURL = redirectMetadata.ctaURL,
 			redirectType = redirectMetadata.redirectType,
 			redirectAddon = redirectMetadata.redirectAddon,
@@ -370,6 +400,8 @@ function GangProgression.GetCustomJobPremiumCreditAction(premiumCredits, customJ
 		return {
 			affordable = false,
 			errorCode = "insufficient_premium_credits",
+			ctaLabel = redirectMetadata.ctaLabel,
+			ctaDescription = redirectMetadata.ctaDescription,
 			ctaURL = redirectMetadata.ctaURL,
 			redirectType = redirectMetadata.redirectType,
 			redirectAddon = redirectMetadata.redirectAddon,
@@ -380,6 +412,8 @@ function GangProgression.GetCustomJobPremiumCreditAction(premiumCredits, customJ
 	return {
 		affordable = true,
 		errorCode = "ok",
+		ctaLabel = redirectMetadata.ctaLabel,
+		ctaDescription = redirectMetadata.ctaDescription,
 		ctaURL = nil
 	}
 end

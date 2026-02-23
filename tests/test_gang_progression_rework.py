@@ -58,8 +58,15 @@ def test_custom_job_premium_credit_action_provides_store_cta_on_shortfall():
     assert 'redirectAddon = "prometheus"' in SOURCE
     assert 'openShopFunction = "Prometheus.OpenShop"' in SOURCE
     assert 'fallbackAction = "gui_open_url"' in SOURCE
+    assert 'fallbackDescription = "Open external premium credits store"' in SOURCE
+    assert 'ctaLabel = "Open Credits Shop"' in SOURCE
+    assert 'ctaDescription = "Buy premium credits from the store"' in SOURCE
     assert 'errorCode = "insufficient_premium_credits"' in SOURCE
     assert 'errorCode = "invalid_input"' in SOURCE
+    assert 'function GangProgression.OpenPremiumCreditsShop()' in SOURCE
+    assert 'Prometheus.OpenShop()' in SOURCE
+    assert 'gui.OpenURL(redirectPayload.fallbackURL)' in SOURCE
+    assert 'Failed to open premium credits shop' in SOURCE
     assert 'redirectType = redirectMetadata.redirectType' in SOURCE
     assert 'redirectAddon = redirectMetadata.redirectAddon' in SOURCE
     assert 'redirectPayload = redirectMetadata.redirectPayload' in SOURCE
