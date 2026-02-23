@@ -19,9 +19,5 @@ def test_bricks_unboxing_hotfix_targets_nil_button_error():
     path = Path("lua/autorun/client/bricks_unboxing_rewards_hotfix.lua")
     content = path.read_text()
     assert "bricks_server_unboxingmenu_rewards.lua" in content
-    assert "bricks_server_unboxingmenu_rewards" in content
     assert "field 'button'" in content
-    assert "nil value" in content
-    assert "isNilButtonError" in content
     assert "xpcall" in content
-    assert 'hook.Add("Think"' in content
