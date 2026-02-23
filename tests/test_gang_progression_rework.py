@@ -54,3 +54,19 @@ def test_custom_job_premium_credit_action_provides_store_cta_on_shortfall():
     assert 'function GangProgression.GetCustomJobPremiumCreditAction(premiumCredits, customJobCost)' in SOURCE
     assert 'errorCode = "insufficient_premium_credits"' in SOURCE
     assert 'ctaURL = GangProgression.ResolvePremiumCreditsStoreURL()' in SOURCE
+
+
+def test_progression_snapshot_supports_normalized_data_and_point_budgeting():
+    assert 'function GangProgression.NormalizeGangData(gangData)' in SOURCE
+    assert 'function GangProgression.GetSpentUpgradePoints(upgrades)' in SOURCE
+    assert 'function GangProgression.GetProgressionSnapshot(gangData)' in SOURCE
+    assert 'upgradePointsAvailable = availableUpgradePoints' in SOURCE
+    assert 'upgradePointsSpent = spentUpgradePoints' in SOURCE
+    assert 'nextUpgradeUnlock = nextUpgradeUnlock' in SOURCE
+
+
+def test_normalization_guards_invalid_or_unknown_upgrade_data():
+    assert 'NormalizeGangData received invalid gang data' in SOURCE
+    assert 'Ignoring unknown upgrade while normalizing gang data' in SOURCE
+    assert 'math.max(0, math.floor(tonumber(gangData.totalXP) or 0))' in SOURCE
+    assert 'math.max(0, math.floor(tonumber(gangData.balance) or 0))' in SOURCE

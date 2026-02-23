@@ -343,4 +343,99 @@ function GangProgression.GetCustomJobPremiumCreditAction(premiumCredits, customJ
 	}
 end
 
+--- Safely normalizes gang data for progression calculations.
+--- @param gangData table|nil
+--- @return table
+function GangProgression.NormalizeGangData(gangData)
+	if type(gangData) ~= "table" then
+		GangProgression.Log("warn", "NormalizeGangData received invalid gang data", {
+			gangDataType = type(gangData)
+		})
+		gangData = {}
+	end
+
+	local normalized = {
+		totalXP = math.max(0, math.floor(tonumber(gangData.totalXP) or 0)),
+		balance = math.max(0, math.floor(tonumber(gangData.balance) or 0)),
+		upgrades = {},
+		doctrineId = gangData.doctrineId
+	}
+
+	if type(gangData.upgrades) == "table" then
+		for upgradeId, rank in pairs(gangData.upgrades) do
+			if GangProgression.Upgrades[upgradeId] then
+				normalized.upgrades[upgradeId] = math.max(0, math.floor(tonumber(rank) or 0))
+			else
+				GangProgression.Log("warn", "Ignoring unknown upgrade while normalizing gang data", {
+					upgradeId = upgradeId
+				})
+			end
+		end
+	end
+
+	local level, xpIntoLevel = GangProgression.GetLevelFromTotalXP(normalized.totalXP)
+	normalized.level = level
+	normalized.xpIntoLevel = xpIntoLevel
+	normalized.requiredXP = GangProgression.GetRequiredXP(level)
+	normalized.upgradePoints = GangProgression.GetUpgradePointsForLevel(level)
+
+	return normalized
+end
+
+--- Computes total upgrade points spent on active upgrade ranks.
+--- @param upgrades table|nil
+--- @return number
+function GangProgression.GetSpentUpgradePoints(upgrades)
+	if type(upgrades) ~= "table" then
+		return 0
+	end
+
+	local spent = 0
+	for upgradeId, rank in pairs(upgrades) do
+		local definition = GangProgression.Upgrades[upgradeId]
+		if definition then
+			spent = spent + math.min(definition.maxRank, math.max(0, math.floor(tonumber(rank) or 0)))
+		end
+	end
+
+	return spent
+end
+
+--- Builds a UI-focused progression snapshot with upgrade unlock information.
+--- @param gangData table|nil
+--- @return table
+function GangProgression.GetProgressionSnapshot(gangData)
+	local normalized = GangProgression.NormalizeGangData(gangData)
+	local spentUpgradePoints = GangProgression.GetSpentUpgradePoints(normalized.upgrades)
+	local availableUpgradePoints = math.max(0, normalized.upgradePoints - spentUpgradePoints)
+
+	local nextUpgradeUnlock = nil
+	for upgradeId, definition in pairs(GangProgression.Upgrades) do
+		local currentRank = normalized.upgrades[upgradeId] or 0
+		if currentRank < definition.maxRank and normalized.level < definition.unlockLevel then
+			if not nextUpgradeUnlock or definition.unlockLevel < nextUpgradeUnlock.unlockLevel then
+				nextUpgradeUnlock = {
+					upgradeId = upgradeId,
+					name = definition.name,
+					unlockLevel = definition.unlockLevel
+				}
+			end
+		end
+	end
+
+	return {
+		level = normalized.level,
+		totalXP = normalized.totalXP,
+		xpIntoLevel = normalized.xpIntoLevel,
+		requiredXP = normalized.requiredXP,
+		balance = normalized.balance,
+		doctrineId = normalized.doctrineId,
+		upgradePointsEarned = normalized.upgradePoints,
+		upgradePointsSpent = spentUpgradePoints,
+		upgradePointsAvailable = availableUpgradePoints,
+		nextUpgradeUnlock = nextUpgradeUnlock,
+		canSelectDoctrine = GangProgression.CanSelectDoctrine(normalized.level)
+	}
+end
+
 return GangProgression
