@@ -50,13 +50,11 @@ def test_doctrine_system_provides_unique_paths():
 def test_custom_job_premium_credit_action_provides_store_cta_on_shortfall():
     assert 'PremiumCreditsStoreURL = "https://smgrpdonate.shop/"' in SOURCE
     assert 'function GangProgression.ResolvePremiumCreditsStoreURL()' in SOURCE
-    assert 'function GangProgression.ResolvePremiumCreditsRedirect()' in SOURCE
+    assert 'function GangProgression.ResolvePremiumCreditsRedirectAction()' in SOURCE
     assert 'Prometheus.GetCreditsStoreURL' in SOURCE
     assert 'Prometheus.OpenShop' in SOURCE
     assert 'function GangProgression.GetCustomJobPremiumCreditAction(premiumCredits, customJobCost)' in SOURCE
     assert 'errorCode = "insufficient_premium_credits"' in SOURCE
-    assert 'redirectType = "prometheus_shop"' in SOURCE
     assert 'redirectAddon = "prometheus"' in SOURCE
-    assert 'openShopFunction = hasPrometheusShopOpen and "Prometheus.OpenShop" or nil' in SOURCE
-    assert 'fallbackAction = "gui_open_url"' in SOURCE
+    assert 'redirectAction = hasPrometheusOpenShop and "open_shop" or "open_url"' in SOURCE
     assert 'reason = "custom_job_premium_credit_shortfall"' in SOURCE

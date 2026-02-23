@@ -311,29 +311,27 @@ function GangProgression.ResolvePremiumCreditsStoreURL()
 	return GangProgression.Config.PremiumCreditsStoreURL
 end
 
---- Resolves client redirect metadata for premium-credit purchases.
+--- Resolves the redirect action payload used by clients when premium credits are missing.
 --- @return table
-function GangProgression.ResolvePremiumCreditsRedirect()
-	local redirectURL = GangProgression.ResolvePremiumCreditsStoreURL()
-	local hasPrometheusShopOpen = istable(Prometheus) and isfunction(Prometheus.OpenShop)
+function GangProgression.ResolvePremiumCreditsRedirectAction()
+	local storeURL = GangProgression.ResolvePremiumCreditsStoreURL()
+	local hasPrometheusOpenShop = istable(Prometheus) and isfunction(Prometheus.OpenShop)
 
-	if not hasPrometheusShopOpen and (not isstring(redirectURL) or redirectURL == "") then
-		GangProgression.Log("warn", "No valid premium-credit redirect method is available", {
+	if not hasPrometheusOpenShop and (not isstring(storeURL) or storeURL == "") then
+		GangProgression.Log("warn", "Missing premium-credit redirect handler and URL fallback", {
 			hasPrometheus = istable(Prometheus),
-			hasPrometheusShopOpen = hasPrometheusShopOpen,
-			redirectURLType = type(redirectURL)
+			hasPrometheusOpenShop = hasPrometheusOpenShop,
+			storeURLType = type(storeURL)
 		})
 	end
 
 	return {
-		ctaURL = redirectURL,
-		redirectType = "prometheus_shop",
+		ctaURL = storeURL,
 		redirectAddon = "prometheus",
+		redirectAction = hasPrometheusOpenShop and "open_shop" or "open_url",
 		redirectPayload = {
-			url = redirectURL,
-			reason = "custom_job_premium_credit_shortfall",
-			openShopFunction = hasPrometheusShopOpen and "Prometheus.OpenShop" or nil,
-			fallbackAction = "gui_open_url"
+			shopURL = storeURL,
+			reason = "custom_job_premium_credit_shortfall"
 		}
 	}
 end
@@ -343,31 +341,31 @@ end
 --- @param customJobCost number
 --- @return table
 function GangProgression.GetCustomJobPremiumCreditAction(premiumCredits, customJobCost)
+	local redirectAction = GangProgression.ResolvePremiumCreditsRedirectAction()
+
 	if type(premiumCredits) ~= "number" or type(customJobCost) ~= "number" then
 		GangProgression.Log("error", "Invalid premium credit action input", {
 			premiumCreditsType = type(premiumCredits),
 			customJobCostType = type(customJobCost)
 		})
-		local redirectMeta = GangProgression.ResolvePremiumCreditsRedirect()
 		return {
 			affordable = false,
 			errorCode = "invalid_input",
-			ctaURL = redirectMeta.ctaURL,
-			redirectType = redirectMeta.redirectType,
-			redirectAddon = redirectMeta.redirectAddon,
-			redirectPayload = redirectMeta.redirectPayload
+			ctaURL = redirectAction.ctaURL,
+			redirectAddon = redirectAction.redirectAddon,
+			redirectAction = redirectAction.redirectAction,
+			redirectPayload = redirectAction.redirectPayload
 		}
 	end
 
 	if premiumCredits < customJobCost then
-		local redirectMeta = GangProgression.ResolvePremiumCreditsRedirect()
 		return {
 			affordable = false,
 			errorCode = "insufficient_premium_credits",
-			ctaURL = redirectMeta.ctaURL,
-			redirectType = redirectMeta.redirectType,
-			redirectAddon = redirectMeta.redirectAddon,
-			redirectPayload = redirectMeta.redirectPayload
+			ctaURL = redirectAction.ctaURL,
+			redirectAddon = redirectAction.redirectAddon,
+			redirectAction = redirectAction.redirectAction,
+			redirectPayload = redirectAction.redirectPayload
 		}
 	end
 
