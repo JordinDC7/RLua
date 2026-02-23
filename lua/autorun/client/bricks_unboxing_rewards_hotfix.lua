@@ -7,6 +7,7 @@ local TARGET_PANEL_NAMES = {
 	"bricks_server_unboxingmenu_rewards",
 	"bricks_server_unboxingmenu_rewards_vgui"
 }
+local REGISTER_PATCH_FLAG = "__rluaRewardsRegisterPatched"
 
 --- Detects whether an error matches the known nil button failures in the rewards panel.
 --- @param errorMessage string
@@ -99,6 +100,24 @@ local function applyPatch()
 
 	return false
 end
+
+--- Wraps vgui.Register so late panel registrations also receive the hotfix.
+local function patchRegister()
+	if not vgui or not isfunction(vgui.Register) or vgui[REGISTER_PATCH_FLAG] then
+		return
+	end
+
+	local originalRegister = vgui.Register
+	vgui.Register = function(panelName, panelTable, basePanel)
+		originalRegister(panelName, panelTable, basePanel)
+		patchControlTable(panelName)
+	end
+
+	vgui[REGISTER_PATCH_FLAG] = true
+	log("info", "Wrapped vgui.Register for late rewards panel patching")
+end
+
+patchRegister()
 
 if not applyPatch() then
 	local hookName = "RLua.BricksUnboxingRewardsPatch"

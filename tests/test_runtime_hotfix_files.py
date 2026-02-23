@@ -25,3 +25,6 @@ def test_bricks_unboxing_hotfix_targets_nil_button_error():
     assert "isNilButtonError" in content
     assert "xpcall" in content
     assert 'hook.Add("Think"' in content
+    assert "function patchRegister()" in content
+    assert "vgui.Register = function(panelName, panelTable, basePanel)" in content
+    assert "Wrapped vgui.Register for late rewards panel patching" in content
