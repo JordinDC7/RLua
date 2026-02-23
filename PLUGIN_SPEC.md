@@ -957,6 +957,7 @@ local function getSnapshot(player: Player): table
 		Level = data.Level,
 		Xp = data.Xp,
 		Daily = data.Daily,
+		DailyRewards = Settings.DailyRewards,
 		Quests = data.Quests,
 		Pets = data.Pets,
 		EquippedPet = data.EquippedPet,
@@ -1363,6 +1364,13 @@ questPanel.Position = UDim2.new(0, 210, 0, 70)
 questPanel.BackgroundTransparency = 1
 questPanel.Parent = frame
 
+local rewardsPanel = Instance.new("Frame")
+rewardsPanel.Size = UDim2.new(1, -24, 0, 86)
+rewardsPanel.Position = UDim2.new(0, 12, 1, -92)
+rewardsPanel.BackgroundColor3 = Color3.fromRGB(30, 34, 46)
+rewardsPanel.BorderSizePixel = 0
+rewardsPanel.Parent = frame
+
 local plantCarrot = createButton("Plant Carrot", UDim2.new(0, 180, 0, 32), UDim2.new(0, 0, 0, 0), Color3.fromRGB(74, 140, 100), actionPanel)
 local plantBerry = createButton("Plant Strawberry", UDim2.new(0, 180, 0, 32), UDim2.new(0, 0, 0, 40), Color3.fromRGB(170, 76, 100), actionPanel)
 local harvestButton = createButton("Harvest (1,1)", UDim2.new(0, 180, 0, 32), UDim2.new(0, 0, 0, 80), Color3.fromRGB(140, 98, 74), actionPanel)
@@ -1404,6 +1412,75 @@ local petButton = createButton("Adopt Bunny", UDim2.new(0, 180, 0, 32), UDim2.ne
 local craftButton = createButton("Craft Garden Stew", UDim2.new(0, 180, 0, 32), UDim2.new(0, 0, 0, 160), Color3.fromRGB(180, 120, 90), questPanel)
 local profitBoostButton = createButton("Boost Profit", UDim2.new(0, 180, 0, 32), UDim2.new(0, 0, 0, 200), Color3.fromRGB(140, 110, 200), questPanel)
 
+local rewardsTitle = Instance.new("TextLabel")
+rewardsTitle.Size = UDim2.new(1, -12, 0, 20)
+rewardsTitle.Position = UDim2.new(0, 6, 0, 4)
+rewardsTitle.Text = "Daily Rewards"
+rewardsTitle.TextColor3 = Color3.fromRGB(226, 230, 255)
+rewardsTitle.BackgroundTransparency = 1
+rewardsTitle.Font = Enum.Font.GothamBold
+rewardsTitle.TextSize = 12
+rewardsTitle.TextXAlignment = Enum.TextXAlignment.Left
+rewardsTitle.Parent = rewardsPanel
+
+local rewardsRows = Instance.new("Frame")
+rewardsRows.Size = UDim2.new(1, -12, 1, -28)
+rewardsRows.Position = UDim2.new(0, 6, 0, 24)
+rewardsRows.BackgroundTransparency = 1
+rewardsRows.Parent = rewardsPanel
+
+--- Rebuilds rewards rows without duplicating old entries.
+local function updateRewardsUi(snapshot: table)
+	for _, child in ipairs(rewardsRows:GetChildren()) do
+		child:Destroy()
+	end
+
+	local rewards = snapshot.DailyRewards
+	local streak = snapshot.Daily and snapshot.Daily.Streak or 0
+	if type(rewards) ~= "table" then
+		local fallback = Instance.new("TextLabel")
+		fallback.Size = UDim2.new(1, 0, 0, 18)
+		fallback.Position = UDim2.new(0, 0, 0, 0)
+		fallback.BackgroundTransparency = 1
+		fallback.Text = "Rewards unavailable"
+		fallback.TextColor3 = Color3.fromRGB(189, 193, 218)
+		fallback.Font = Enum.Font.Gotham
+		fallback.TextSize = 11
+		fallback.TextXAlignment = Enum.TextXAlignment.Left
+		fallback.Parent = rewardsRows
+		return
+	end
+
+	local rewardCount = #rewards
+	local claimedCount = 0
+	if rewardCount > 0 then
+		claimedCount = streak % rewardCount
+		if claimedCount == 0 and streak > 0 then
+			claimedCount = rewardCount
+		end
+	end
+
+	for index, reward in ipairs(rewards) do
+		local row = Instance.new("TextLabel")
+		row.Size = UDim2.new(1, 0, 0, 18)
+		row.Position = UDim2.new(0, 0, 0, (index - 1) * 18)
+		row.BackgroundTransparency = 1
+		row.Font = Enum.Font.Gotham
+		row.TextSize = 11
+		row.TextXAlignment = Enum.TextXAlignment.Left
+		local rewardCoins = reward and reward.Coins or 0
+		local dayLabel = string.format("Day %d - %d coins", index, rewardCoins)
+		if index <= claimedCount then
+			row.Text = dayLabel .. " (claimed)"
+			row.TextColor3 = Color3.fromRGB(126, 214, 152)
+		else
+			row.Text = dayLabel
+			row.TextColor3 = Color3.fromRGB(189, 193, 218)
+		end
+		row.Parent = rewardsRows
+	end
+end
+
 --- Updates quest labels and claim buttons.
 local function updateQuestUi(snapshot: table)
 	for index, label in ipairs(questLines) do
@@ -1424,6 +1501,7 @@ local function refresh()
 	local snapshot = remotes.RequestPlotSnapshot:InvokeServer()
 	statsLabel.Text = string.format("Lvl %d | XP %d | Coins %d", snapshot.Level, snapshot.Xp, snapshot.Coins)
 	updateQuestUi(snapshot)
+	updateRewardsUi(snapshot)
 end
 
 plantCarrot.Activated:Connect(function()
