@@ -50,10 +50,20 @@ def test_doctrine_system_provides_unique_paths():
 def test_custom_job_premium_credit_action_provides_store_cta_on_shortfall():
     assert 'PremiumCreditsStoreURL = "https://smgrpdonate.shop/"' in SOURCE
     assert 'function GangProgression.ResolvePremiumCreditsStoreURL()' in SOURCE
+    assert 'function GangProgression.ResolvePremiumCreditsRedirect()' in SOURCE
     assert 'Prometheus.GetCreditsStoreURL' in SOURCE
+    assert 'Prometheus.OpenShop' in SOURCE
     assert 'function GangProgression.GetCustomJobPremiumCreditAction(premiumCredits, customJobCost)' in SOURCE
+    assert 'redirectType = "prometheus_shop"' in SOURCE
+    assert 'redirectAddon = "prometheus"' in SOURCE
+    assert 'openShopFunction = "Prometheus.OpenShop"' in SOURCE
+    assert 'fallbackAction = "gui_open_url"' in SOURCE
     assert 'errorCode = "insufficient_premium_credits"' in SOURCE
-    assert 'ctaURL = GangProgression.ResolvePremiumCreditsStoreURL()' in SOURCE
+    assert 'errorCode = "invalid_input"' in SOURCE
+    assert 'redirectType = redirectMetadata.redirectType' in SOURCE
+    assert 'redirectAddon = redirectMetadata.redirectAddon' in SOURCE
+    assert 'redirectPayload = redirectMetadata.redirectPayload' in SOURCE
+    assert 'Unable to resolve premium credits redirect target' in SOURCE
 
 
 def test_progression_snapshot_supports_normalized_data_and_point_budgeting():
